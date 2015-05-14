@@ -17,8 +17,16 @@ int flag = 0;
 boolean isTurningLeft = false;
 boolean isTurningRight = false;
 
+#define trigPin 13
+#define echoPin 12
+
 void setup() {  
   Serial.begin(9600);       
+
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  
 
   AFMS.begin();
   delay(500);
@@ -26,7 +34,28 @@ void setup() {
 
 void loop(){
   
-  uint8_t i;
+  long duration; 
+  long distance;
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10); 
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  distance = (duration/2) / 29.1;
+  
+  if (distance < 25) {
+    Serial.println("too close revert");
+    all_reverse();
+  }
+  
+  if (distance < 10) {
+    all_stop();
+  }
+  
+  if (distance >= 200 || distance <= 0){
+    Serial.println("Out of range");
+  }
   
   if(Serial.available() > 0) {     
     state = Serial.read();  
@@ -86,6 +115,8 @@ void loop(){
       all_stop();
     }
   }
+  
+  delay(500);
 }
 
 void apply_speed() {
