@@ -2,7 +2,7 @@
 #include <Adafruit_MotorShield.h>
 #include "utility/Adafruit_PWMServoDriver.h"
 
-Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
+Adafruit_MotorShield AFMS = Adafruit_MotorShield();
 Adafruit_DCMotor *engineM1 = AFMS.getMotor(1);
 Adafruit_DCMotor *engineM2 = AFMS.getMotor(2);
 Adafruit_DCMotor *engineM3 = AFMS.getMotor(3);
@@ -10,39 +10,42 @@ Adafruit_DCMotor *engineM4 = AFMS.getMotor(4);
 
 #define trigPin 13
 #define echoPin 12
+#define laser 2
 
-char dataIn='S';
+char dataIn = 'S';
 char determinant;
 char det;
 
 int speed_vel = 0;
+int state = LOW;
 
-
-void setup() {  
-  Serial.begin(9600);       
+void setup() {
+  Serial.begin(9600);
 
   pinMode(trigPin, OUTPUT);
   pinMode(echoPin, INPUT);
+  pinMode(laser, OUTPUT);
 
   AFMS.begin();
   delay(500);
 }
 
-void loop(){
+void loop() {
   det = check();
-  
-  long duration; 
+  long duration;
   long distance;
+  
+  digitalWrite(laser, state);
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10); 
+  delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
-  distance = (duration/2) / 29.1;
+  distance = (duration / 2) / 29.1;
 
   if (distance < 25) {
-    //all_reverse();
+    all_reverse();
   }
 
   if (distance < 10) {
@@ -50,13 +53,13 @@ void loop(){
   }
 
 
-  while(det == 'W') {
+  while (det == 'W') {
     setSpeeds(speed_vel);
     runEngines();
     det = check();
   }
 
-  while (det == 'S') { 
+  while (det == 'S') {
     all_reverse();
     det = check();
   }
@@ -79,7 +82,17 @@ void loop(){
     det = check();
   }
 
-  delay(500);
+  while (det == 'L') {
+    state = HIGH;
+    det = check();
+  }
+
+  while (det == 'Q') {
+    state = LOW;
+    det = check();
+  }
+  
+  delay(100);
 }
 
 int check() {
@@ -89,19 +102,25 @@ int check() {
 
     if (dataIn == 'W') {  // speed up
       determinant  = 'W';
-    } 
+    }
     else if (dataIn == 'X') { // full stop
       determinant = 'X';
-    } 
+    }
     else if (dataIn == 'A') { // left
       determinant = 'A';
-    } 
+    }
     else if (dataIn == 'S') { // reverse
       determinant = 'S';
-    } 
+    }
     else if (dataIn == 'D') { // right
       determinant = 'D';
+    }
+    else if (dataIn == 'L') { // laser on
+      determinant = 'L';
     } 
+    else if (dataIn == 'Q') { // laser off
+      determinant = 'Q';
+    }
     else if (dataIn == '1') {
       speed_vel = 20;
     }
@@ -129,7 +148,7 @@ int check() {
     else if (dataIn == '9') {
       speed_vel = 180;
     }
-    else if (dataIn == '10') {
+    else if (dataIn == '0') {
       speed_vel = 200;
     }
   }
@@ -153,16 +172,16 @@ void setSpeeds(int velocity) {
 
 void turnLeft(int velocity) {
   engineM1->setSpeed(velocity);
-  engineM2->setSpeed(velocity/4);
-  engineM3->setSpeed(velocity/4);
+  engineM2->setSpeed(velocity / 4);
+  engineM3->setSpeed(velocity / 4);
   engineM4->setSpeed(velocity);
 }
 
 void turnRight(int velocity) {
-  engineM1->setSpeed(velocity/4);
+  engineM1->setSpeed(velocity / 4);
   engineM2->setSpeed(velocity);
   engineM3->setSpeed(velocity);
-  engineM4->setSpeed(velocity/4);
+  engineM4->setSpeed(velocity / 4);
 }
 
 void runEngines() {
